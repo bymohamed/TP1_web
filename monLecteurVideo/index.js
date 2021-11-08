@@ -75,6 +75,7 @@ class MyVideoPlayer extends HTMLElement {
         // récupération de l'attribut HTML
         this.player.src = this.getAttribute("src");
 
+        this.ctx = window.AudioContext || window.webkitAudioContext;
 
 
 
@@ -84,8 +85,13 @@ class MyVideoPlayer extends HTMLElement {
 
     definitEcouteurs() {
         console.log("ecouteurs définis")
+        let i=0;
         this.shadowRoot.querySelector("#play").onclick = () => {
             this.play();
+            this.context = new this.ctx();
+            if(i==0) this.buildAudioGraphPanner();
+            i=1;
+
         }
         this.shadowRoot.querySelector("#pause").onclick = () => {
             this.pause();
@@ -109,21 +115,8 @@ class MyVideoPlayer extends HTMLElement {
 
         var audioSource=null;
 
-        this.shadowRoot.querySelector("#rightLeft").onchange = (event) => {
-            const balance = parseFloat(event.target.value);
-
-            const audioContext = new AudioContext();
-
-            if (typeof this.audioSource === 'undefined' || this.audioSource === null) {
-                this.audioSource = audioContext.createMediaElementSource(this.player);
-            }
-
-            var panner = audioContext.createStereoPanner();
-            this.audioSource.connect(panner);
-            panner.connect(audioContext.destination);
-
-            // Configure panner -1 left and 1 for right. 
-            panner.pan.setValueAtTime(balance/100, audioContext.currentTime)
+        this.shadowRoot.querySelector("#rightLeft").oninput = (event) => {
+            this.pannerNode.pan.value = event.target.value/100;
         }
 
     }
@@ -140,6 +133,17 @@ class MyVideoPlayer extends HTMLElement {
     play() {
         this.player.play();
         
+    }
+
+    buildAudioGraphPanner(){
+        
+    // create source and gain node
+    this.source = this.context.createMediaElementSource(this.player);
+    this.pannerNode = this.context.createStereoPanner();
+  
+    // connect nodes together
+    this.source.connect(this.pannerNode);
+    this.pannerNode.connect(this.context.destination);
     }
 
     pause() {
